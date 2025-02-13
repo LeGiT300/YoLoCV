@@ -1,0 +1,14 @@
+names:
+- ball
+- player
+- referee
+nc: 3
+roboflow:
+  license: MIT
+  project: football-x74yb
+  url: https://universe.roboflow.com/justgettingstarted/football-x74yb/dataset/1
+  version: 1
+  workspace: justgettingstarted
+test: ../test/images
+train: ../train/images
+val: ../valid/images
