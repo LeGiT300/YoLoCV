@@ -1,11 +1,94 @@
-from flask import Flask, render_template
+import argparse
+import io
+from PIL import Image
+import datetime
 
+import torch
+import cv2 as cv
+import numpy as np
+import tensorflow as tf
+from re import DEBUG, sub
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, Response
+from werkzeug.utils import secure_filename, send_from_directory
+import os
+import subprocess
+from subprocess import Popen
+import re
+import requests
+import shutil
+import time
+import glob
+import atexit
+
+from ultralytics import YOLO
+
+model = YOLO('best.pt')
 app = Flask(__name__)
+cap = None  # Initialize cap as None
+
+# Add initialization and cleanup functions
+def init_camera():
+    global cap
+    if cap is None or not cap.isOpened():
+        cap = cv.VideoCapture(0)
+    return cap.isOpened()
+
+@atexit.register
+def cleanup():
+    global cap
+    if cap is not None and cap.isOpened():
+        cap.release()
+
+def captureFrames():
+    global cap
+    if not init_camera():
+        print('Could not initialize camera')
+        return
+    
+    try:
+        while True:
+            ret, frame = cap.read()
+            if ret:
+                results = model(frame, save=True)
+                annotated = results[0].plot()
+                ret, buffer = cv.imencode('.jpg', annotated)
+                frame = buffer.tobytes()
+                yield (b'--frame\r\n'
+                      b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            else:
+                break
+    except Exception as e:
+        print(f"Error in captureFrames: {str(e)}")
+        if cap is not None:
+            cap.release()
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
 
+@app.route('/start', methods=['POST'])
+def start():
+    if init_camera():
+        return render_template('index.html')
+    return jsonify({'error': 'Failed to start camera'}), 500
+
+
+@app.route('/stop', methods=['POST'])
+def stop():
+    global cap
+    if cap is not None and cap.isOpened():
+        cap.release()
+        cap = None
+    return render_template('stop.html')
+
+
+@app.route('/video_capture')
+def video_capture():
+    return Response(captureFrames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
 if __name__ == '__main__':
+    init_camera()  # Initialize camera at startup
     app.run(debug=True, port=2000)
