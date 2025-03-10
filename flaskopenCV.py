@@ -1,6 +1,6 @@
 import cv2 as cv
 
-from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, Response
+from flask import Flask, render_template, jsonify, Response
 import atexit
 
 from ultralytics import YOLO
