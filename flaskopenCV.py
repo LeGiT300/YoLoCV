@@ -36,8 +36,7 @@ def captureFrames():
                 annotated = results[0].plot()
                 ret, buffer = cv.imencode('.jpg', annotated)
                 frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                      b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
             else:
                 break
     except Exception as e:
